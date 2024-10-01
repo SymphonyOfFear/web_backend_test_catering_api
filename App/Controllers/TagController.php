@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Models\Tag;
+use Exception;
 
 class TagController
 {
@@ -13,27 +14,55 @@ class TagController
         $this->tagModel = new Tag();
     }
 
+    // Tag aanmaken
     public function create()
     {
-        $tagData = [
-            'name' => $_POST['name']
-        ];
+        $name = $_POST['name'] ?? null;
 
-        $result = $this->tagModel->create($tagData);
+        if (empty($name)) {
+            $this->sendErrorResponse('Tagnaam is verplicht.');
+            return;
+        }
 
+        try {
+            $result = $this->tagModel->addTag($name);
+            if ($result) {
+                $this->sendSuccessResponse('Tag succesvol aangemaakt.');
+            } else {
+                $this->sendErrorResponse('Fout bij het aanmaken van tag.');
+            }
+        } catch (Exception $e) {
+            $this->sendErrorResponse($e->getMessage());
+        }
+    }
+
+    // Alle tags ophalen
+    public function getAll()
+    {
+        try {
+            $data = $this->tagModel->getAllTags();
+            $this->sendSuccessResponse('Tags succesvol opgehaald.', $data);
+        } catch (Exception $e) {
+            $this->sendErrorResponse('Fout bij het ophalen van tags: ' . $e->getMessage());
+        }
+    }
+
+    // Succesrespons versturen
+    protected function sendSuccessResponse(string $message, array $data = [])
+    {
         echo json_encode([
-            'status' => $result ? 'success' : 'error',
-            'message' => $result ? 'Tag created successfully.' : 'Failed to create tag.'
+            'status' => 'success',
+            'message' => $message,
+            'data' => $data
         ]);
     }
 
-    public function getAll()
+    // Foutrespons versturen
+    protected function sendErrorResponse(string $message)
     {
-        $data = $this->tagModel->getAll();
-
         echo json_encode([
-            'status' => 'success',
-            'data' => $data
+            'status' => 'error',
+            'message' => $message
         ]);
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Plugins\Db\Db;
+use Exception;
 
 class Tag
 {
@@ -10,17 +11,22 @@ class Tag
 
     public function __construct()
     {
-        // Provide database connection parameters directly
         $this->db = new Db('localhost', 'dtt_assessment', 'root', '');
     }
 
-    public function create(array $data): bool
+    /**
+     * Tag toevoegen.
+     */
+    public function addTag(array $data): bool
     {
         $query = "INSERT INTO tags (name) VALUES (:name)";
-        return $this->db->executeQuery($query, ['name' => $data['name']]);
+        return $this->db->executeQuery($query, $data);
     }
 
-    public function getAll(): array
+    /**
+     * Alle tags ophalen.
+     */
+    public function getAllTags(): array
     {
         $query = "SELECT * FROM tags";
         return $this->db->fetchAll($query);

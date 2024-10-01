@@ -23,7 +23,7 @@ class LocationController
             'phone_number' => $_POST['phone_number']
         ];
 
-        $result = $this->locationModel->create($locationData);
+        $result = $this->locationModel->addLocation($locationData);
 
         echo json_encode([
             'status' => $result ? 'success' : 'error',
@@ -33,7 +33,7 @@ class LocationController
 
     public function getAll()
     {
-        $data = $this->locationModel->getAll();
+        $data = $this->locationModel->getAllLocations();
 
         echo json_encode([
             'status' => 'success',

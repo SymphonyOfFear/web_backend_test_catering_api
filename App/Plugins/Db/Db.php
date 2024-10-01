@@ -4,123 +4,86 @@ namespace App\Plugins\Db;
 
 use PDO;
 use PDOException;
-use PDOStatement;
+use Exception;
 
 class Db
 {
-    private PDO $connection;
-    private ?PDOStatement $stmt;
+    protected PDO $conn;
 
-    /**
-     * Constructor of this class.
-     * Initializes the database connection using the provided parameters.
-     *
-     * @param string $host
-     * @param string $database
-     * @param string $username
-     * @param string $password
-     */
     public function __construct(string $host, string $database, string $username, string $password)
     {
-        // Establish the database connection using provided parameters
-        $this->connection = $this->connect($host, $database, $username, $password);
-    }
-
-    /**
-     * Start a transaction.
-     */
-    public function beginTransaction(): bool
-    {
-        return $this->connection->beginTransaction();
-    }
-
-    /**
-     * Roll back the transaction.
-     */
-    public function rollBack(): bool
-    {
-        return $this->connection->rollBack();
-    }
-
-    /**
-     * Commit a transaction.
-     */
-    public function commit(): bool
-    {
-        return $this->connection->commit();
-    }
-
-    /**
-     * Execute a query with binding parameters.
-     */
-    public function executeQuery(string $query, array $bind = []): bool
-    {
-        $this->stmt = $this->connection->prepare($query);
-        return $this->stmt->execute($bind);
-    }
-
-    /**
-     * Fetch all records from a query.
-     */
-    public function fetchAll(string $query, array $bind = []): array
-    {
-        $this->stmt = $this->connection->prepare($query);
-        $this->stmt->execute($bind);
-        return $this->stmt->fetchAll();
-    }
-
-    /**
-     * Fetch one record from a query.
-     */
-    public function fetchOne(string $query, array $bind = []): ?array
-    {
-        $this->stmt = $this->connection->prepare($query);
-        $this->stmt->execute($bind);
-        return $this->stmt->fetch() ?: null;
-    }
-
-    /**
-     * Get the last inserted ID.
-     */
-    public function getLastInsertedId(): int
-    {
-        return (int)$this->connection->lastInsertId();
-    }
-
-    /**
-     * Get the current PDO connection.
-     */
-    public function getConnection(): PDO
-    {
-        return $this->connection;
-    }
-
-    /**
-     * Connect to the database using the provided parameters.
-     */
-    private function connect(string $host, string $database, string $username, string $password): PDO
-    {
+        // Verbinden met de database
         try {
-            return new PDO(
-                "mysql:host={$host};dbname={$database};charset=utf8mb4",
-                $username,
-                $password,
-                [
-                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                    PDO::ATTR_EMULATE_PREPARES => false,
-                ]
-            );
+            $dsn = "mysql:host=$host;dbname=$database;charset=utf8";
+            $this->conn = new PDO($dsn, $username, $password);
+            $this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         } catch (PDOException $e) {
-            throw new PDOException("Failed to connect to the database: " . $e->getMessage());
+            throw new Exception('Database verbinding mislukt: ' . $e->getMessage());
         }
     }
 
-    /**
-     * Return the last executed statement if any.
-     */
-    public function getStatement(): ?PDOStatement
+    // Start een transactie
+    public function beginTransaction(): bool
     {
-        return $this->stmt;
+        return $this->conn->beginTransaction();
+    }
+
+    // Bevestig een transactie
+    public function commit(): bool
+    {
+        return $this->conn->commit();
+    }
+
+    // Rollback een transactie
+    public function rollBack(): bool
+    {
+        return $this->conn->rollBack();
+    }
+
+    // Voer een query uit met optionele parameters
+    public function executeQuery(string $query, array $params = []): bool
+    {
+        try {
+            $stmt = $this->conn->prepare($query);
+            return $stmt->execute($params);
+        } catch (PDOException $e) {
+            throw new Exception('Query uitvoeren mislukt: ' . $e->getMessage());
+        }
+    }
+
+    // Haal één resultaat op van een query
+    public function fetchOne(string $query, array $params = []): ?array
+    {
+        try {
+            $stmt = $this->conn->prepare($query);
+            $stmt->execute($params);
+            return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+        } catch (PDOException $e) {
+            throw new Exception('Query uitvoeren mislukt: ' . $e->getMessage());
+        }
+    }
+
+    // Haal alle resultaten op van een query
+    public function fetchAll(string $query, array $params = []): array
+    {
+        try {
+            $stmt = $this->conn->prepare($query);
+            $stmt->execute($params);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            throw new Exception('Query uitvoeren mislukt: ' . $e->getMessage());
+        }
+    }
+
+    // Haal het laatst toegevoegde ID op
+    public function getLastInsertedId(): int
+    {
+        return (int) $this->conn->lastInsertId();
+    }
+
+    // Haal de PDO-verbinding op
+    public function getConnection(): PDO
+    {
+        return $this->conn;
     }
 }

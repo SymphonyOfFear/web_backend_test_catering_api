@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Models\Facility;
+use Exception;
 
 class FacilityController
 {
@@ -13,96 +14,65 @@ class FacilityController
         $this->facilityModel = new Facility();
     }
 
-    public function create()
+    public function getFacilityById($id)
     {
-        $facilityData = [
-            'name' => $_POST['name'] ?? null
-        ];
-
-        $locationData = [
-            'city' => $_POST['city'] ?? null,
-            'address' => $_POST['address'] ?? null,
-            'zip_code' => $_POST['zip_code'] ?? null,
-            'country_code' => $_POST['country_code'] ?? null,
-            'phone_number' => $_POST['phone_number'] ?? null
-        ];
-
-        $tagIds = isset($_POST['tag_ids']) ? explode(',', $_POST['tag_ids']) : [];
-
-        // Validate input data
-        if (empty($facilityData['name']) || empty($locationData['city'])) {
-            echo json_encode([
-                'status' => 'error',
-                'message' => 'Facility name and city are required.'
-            ]);
+        // Controleer of de ID numeriek is en niet 'search'
+        if (!is_numeric($id) || $id === 'search') {
+            $this->sendErrorResponse('Ongeldige route: "search" kan niet als ID worden gebruikt.');
             return;
         }
 
         try {
-            $result = $this->facilityModel->createFacilityWithDetails($facilityData, $locationData, $tagIds);
-            echo json_encode([
-                'status' => $result ? 'success' : 'error',
-                'message' => $result ? 'Facility created successfully.' : 'Failed to create facility.'
-            ]);
-        } catch (\Exception $e) {
-            echo json_encode([
-                'status' => 'error',
-                'message' => $e->getMessage()
-            ]);
+            $data = $this->facilityModel->getFacilityById((int) $id);
+            if ($data) {
+                $this->sendSuccessResponse('Faciliteit succesvol opgehaald.', $data);
+            } else {
+                $this->sendErrorResponse('Faciliteit niet gevonden.');
+            }
+        } catch (Exception $e) {
+            $this->sendErrorResponse('Fout bij het ophalen van de faciliteit: ' . $e->getMessage());
         }
     }
 
-    public function read($id = null)
+
+    public function searchFacilityByName()
     {
-        $data = $id ? $this->facilityModel->getFacilityWithDetails($id) : $this->facilityModel->getAllFacilities();
+        $query = $_GET['query'] ?? null;
 
-        echo json_encode([
-            'status' => 'success',
-            'data' => $data
-        ]);
-    }
+        // Debug statement om te controleren of de query parameter correct wordt ontvangen.
+        // var_dump("Gekregen zoekopdracht:", $query);
 
-    public function update($id)
-    {
-        parse_str(file_get_contents("php://input"), $postData);
-
-        $facilityData = [
-            'name' => $postData['name'] ?? null
-        ];
-
-        if (empty($facilityData['name'])) {
-            echo json_encode([
-                'status' => 'error',
-                'message' => 'Facility name is required.'
-            ]);
+        if (empty($query)) {
+            $this->sendErrorResponse('Zoekopdracht is verplicht.');
             return;
         }
 
-        $result = $this->facilityModel->updateFacility($id, $facilityData);
-
-        echo json_encode([
-            'status' => $result ? 'success' : 'error',
-            'message' => $result ? 'Facility updated successfully.' : 'Failed to update facility.'
-        ]);
+        try {
+            $data = $this->facilityModel->searchFacilityByName($query);
+            if (!empty($data)) {
+                $this->sendSuccessResponse('Faciliteiten gevonden.', $data);
+            } else {
+                $this->sendErrorResponse('Geen faciliteiten gevonden die overeenkomen met de zoekopdracht.');
+            }
+        } catch (Exception $e) {
+            $this->sendErrorResponse('Zoekopdracht mislukt: ' . $e->getMessage());
+        }
     }
 
-    public function delete($id)
+    protected function sendSuccessResponse(string $message, array $data = [])
     {
-        $result = $this->facilityModel->deleteFacility($id);
-
-        echo json_encode([
-            'status' => $result ? 'success' : 'error',
-            'message' => $result ? 'Facility deleted successfully.' : 'Failed to delete facility.'
-        ]);
-    }
-
-    public function search($query)
-    {
-        $data = $this->facilityModel->searchFacilities($query);
-
         echo json_encode([
             'status' => 'success',
+            'message' => $message,
             'data' => $data
+        ]);
+    }
+
+    protected function sendErrorResponse(string $message)
+    {
+        echo json_encode([
+            'status' => 'error',
+            'message' => $message
         ]);
     }
 }
