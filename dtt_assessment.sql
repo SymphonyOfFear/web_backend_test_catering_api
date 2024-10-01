@@ -2,10 +2,10 @@
 -- version 5.2.1
 -- https://www.phpmyadmin.net/
 --
--- Host: mariadb
--- Gegenereerd op: 01 okt 2024 om 13:45
--- Serverversie: 10.4.32-MariaDB-1:10.4.32+maria~ubu2004
--- PHP-versie: 8.2.17
+-- Host: 127.0.0.1
+-- Gegenereerd op: 01 okt 2024 om 16:43
+-- Serverversie: 10.4.28-MariaDB
+-- PHP-versie: 8.2.4
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -29,12 +29,20 @@ SET time_zone = "+00:00";
 
 CREATE TABLE `facilities` (
   `id` int(11) NOT NULL,
-  `name` varchar(100) NOT NULL,
-  `creation_date` datetime NOT NULL,
-  `location_id` int(11) NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+  `name` varchar(255) NOT NULL,
+  `created_at` datetime DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Tabelstructuur voor tabel `facility_locations`
+--
+
+CREATE TABLE `facility_locations` (
+  `facility_id` int(11) NOT NULL,
+  `location_id` int(11) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -44,10 +52,8 @@ CREATE TABLE `facilities` (
 
 CREATE TABLE `facility_tags` (
   `facility_id` int(11) NOT NULL,
-  `tag_id` int(11) NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+  `tag_id` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -57,14 +63,12 @@ CREATE TABLE `facility_tags` (
 
 CREATE TABLE `locations` (
   `id` int(11) NOT NULL,
-  `city` varchar(100) NOT NULL,
+  `city` varchar(255) NOT NULL,
   `address` varchar(255) NOT NULL,
   `zip_code` varchar(20) NOT NULL,
   `country_code` varchar(5) NOT NULL,
-  `phone_number` varchar(20) NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+  `phone_number` varchar(20) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -74,10 +78,8 @@ CREATE TABLE `locations` (
 
 CREATE TABLE `tags` (
   `id` int(11) NOT NULL,
-  `name` varchar(50) NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+  `name` varchar(255) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Indexen voor geëxporteerde tabellen
@@ -87,7 +89,13 @@ CREATE TABLE `tags` (
 -- Indexen voor tabel `facilities`
 --
 ALTER TABLE `facilities`
-  ADD PRIMARY KEY (`id`),
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexen voor tabel `facility_locations`
+--
+ALTER TABLE `facility_locations`
+  ADD PRIMARY KEY (`facility_id`),
   ADD KEY `location_id` (`location_id`);
 
 --
@@ -137,10 +145,11 @@ ALTER TABLE `tags`
 --
 
 --
--- Beperkingen voor tabel `facilities`
+-- Beperkingen voor tabel `facility_locations`
 --
-ALTER TABLE `facilities`
-  ADD CONSTRAINT `facilities_ibfk_1` FOREIGN KEY (`location_id`) REFERENCES `locations` (`id`) ON DELETE CASCADE;
+ALTER TABLE `facility_locations`
+  ADD CONSTRAINT `facility_locations_ibfk_1` FOREIGN KEY (`facility_id`) REFERENCES `facilities` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `facility_locations_ibfk_2` FOREIGN KEY (`location_id`) REFERENCES `locations` (`id`) ON DELETE CASCADE;
 
 --
 -- Beperkingen voor tabel `facility_tags`

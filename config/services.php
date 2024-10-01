@@ -1,26 +1,26 @@
 <?php
 
-require_once '../vendor/autoload.php';
+use App\Plugins\Db\Db;
+use App\Plugins\Di\Container;
+use Bramus\Router\Router;
 
-use App\Plugins;
-use App\Plugins\Di\Factory;
+// Load the configuration file
+$config = require __DIR__ . '/config.php';
 
-$di = Factory::getDi();
+// Retrieve the database configuration values
+$dbConfig = $config['db'];
 
-$di->setShared('router', function () {
-    return new Bramus\Router\Router();
-});
-
-$di->setShared('db', function () use ($config) {
-    $dbConfig = $config['db'];
-    $connectionInterface = new Plugins\Db\Connection\Mysql(
+// Create and configure the Db instance using configuration values
+Container::getInstance()->setShared('db', function () use ($dbConfig) {
+    return new Db(
         $dbConfig['host'],
         $dbConfig['database'],
         $dbConfig['username'],
-        $dbConfig['password'],
+        $dbConfig['password']
     );
-    $db = new Plugins\Db\Db($connectionInterface);
-    $dbAdapter = new Plugins\Db\Adapters\MySql();
-    $dbAdapter->setDb($db);
-    return $db;
+});
+
+// Register the router as a shared service
+Container::getInstance()->setShared('router', function () {
+    return new Router();
 });

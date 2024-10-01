@@ -2,100 +2,125 @@
 
 namespace App\Plugins\Db;
 
-use App\Plugins\Db\Connection\IConnection;
 use PDO;
 use PDOException;
 use PDOStatement;
 
-class Db implements IDb {
-    /** @var PDO|null */
-    private $connection = null;
-    /** @var PDOStatement */
-    private $stmt;
+class Db
+{
+    private PDO $connection;
+    private ?PDOStatement $stmt;
 
     /**
-     * Constructor of this class
-     * @param IConnection $connectionImplementation
+     * Constructor of this class.
+     * Initializes the database connection using the provided parameters.
+     *
+     * @param string $host
+     * @param string $database
+     * @param string $username
+     * @param string $password
      */
-    public function __construct(IConnection $connectionImplementation) {
-        $this->connection = $this->connect($connectionImplementation);
+    public function __construct(string $host, string $database, string $username, string $password)
+    {
+        // Establish the database connection using provided parameters
+        $this->connection = $this->connect($host, $database, $username, $password);
     }
 
     /**
-     * Function to start a transaction
+     * Start a transaction.
      */
-    public function beginTransaction() {
+    public function beginTransaction(): bool
+    {
         return $this->connection->beginTransaction();
     }
 
     /**
-     * Function to roll back the transaction
+     * Roll back the transaction.
      */
-    public function rollBack() {
+    public function rollBack(): bool
+    {
         return $this->connection->rollBack();
     }
 
     /**
-     * Function to commit a transaction
+     * Commit a transaction.
      */
-    public function commit() {
+    public function commit(): bool
+    {
         return $this->connection->commit();
     }
 
     /**
-     * @param string $query
-     * @param array $bind
-     * @return bool
+     * Execute a query with binding parameters.
      */
-    public function executeQuery(string $query, array $bind = []): bool {
+    public function executeQuery(string $query, array $bind = []): bool
+    {
         $this->stmt = $this->connection->prepare($query);
-        if ($bind) {
-            return $this->stmt->execute($bind);
-        }
-        return $this->stmt->execute();
+        return $this->stmt->execute($bind);
     }
 
     /**
-     * Function to get last inserted id
-     * @param mixed $name
-     * @return int
+     * Fetch all records from a query.
      */
-    public function getLastInsertedId($name = null): int {
-        $id = $this->connection->lastInsertId($name);
-        return ($id ?: false);
+    public function fetchAll(string $query, array $bind = []): array
+    {
+        $this->stmt = $this->connection->prepare($query);
+        $this->stmt->execute($bind);
+        return $this->stmt->fetchAll();
     }
 
     /**
-     * Function to get the connection
-     * @return null|PDO
+     * Fetch one record from a query.
      */
-    public function getConnection(): ?PDO {
+    public function fetchOne(string $query, array $bind = []): ?array
+    {
+        $this->stmt = $this->connection->prepare($query);
+        $this->stmt->execute($bind);
+        return $this->stmt->fetch() ?: null;
+    }
+
+    /**
+     * Get the last inserted ID.
+     */
+    public function getLastInsertedId(): int
+    {
+        return (int)$this->connection->lastInsertId();
+    }
+
+    /**
+     * Get the current PDO connection.
+     */
+    public function getConnection(): PDO
+    {
         return $this->connection;
     }
 
     /**
-     * Function to connect the db.
-     * @return PDO
-     * @throws PDOException
+     * Connect to the database using the provided parameters.
      */
-    private function connect(IConnection $connectionImplementation) {
+    private function connect(string $host, string $database, string $username, string $password): PDO
+    {
         try {
             return new PDO(
-                $connectionImplementation->getDsn(),
-                $connectionImplementation->getUsername(),
-                $connectionImplementation->getPassword(),
+                "mysql:host={$host};dbname={$database};charset=utf8mb4",
+                $username,
+                $password,
+                [
+                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                    PDO::ATTR_EMULATE_PREPARES => false,
+                ]
             );
         } catch (PDOException $e) {
-            // Just throw it:
-            throw $e;
+            throw new PDOException("Failed to connect to the database: " . $e->getMessage());
         }
     }
 
     /**
-     * Function to return the last executed statement if any
-     * @return null|PDOStatement
+     * Return the last executed statement if any.
      */
-    public function getStatement(): ?PDOStatement {
+    public function getStatement(): ?PDOStatement
+    {
         return $this->stmt;
     }
 }
